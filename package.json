@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "typeorm": "ts-node --project ./apps/app-nest-1/tsconfig.app.json --require tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "typeorm-ds": "npm run typeorm -- --dataSource ./apps/app-nest-1/src/cli-data-source.ts"
+    "typeorm-ds": "npm run typeorm -- --dataSource ./apps/app-nest-1/src/modules/typeorm-data-sources/typeorm-cli-data-source.ts"
   },
   "dependencies": {
     "@liaoliaots/nestjs-redis": "^10.0.0",
