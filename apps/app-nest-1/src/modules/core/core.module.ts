@@ -1,16 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { GreetingModule } from '../greeting/greeting.module';
+import { rootConfigModuleImports } from '../../shared/imports/root-config-module.imports';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      // No need to import in other modules
-      isGlobal: true,
-      expandVariables: true,
-      // cache: true,
-    }),
-    GreetingModule,
-  ],
+  imports: [...rootConfigModuleImports, GreetingModule],
 })
 export class CoreModule {}
