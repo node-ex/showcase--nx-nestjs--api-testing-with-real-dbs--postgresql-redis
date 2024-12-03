@@ -1,1 +1,16 @@
 GET http://localhost:3000/api/greeting
+
+###
+
+GET http://localhost:3000/api/coffees
+
+###
+
+POST http://localhost:3000/api/coffees
+Content-Type: application/json
+
+{
+  "name": "New Coffee",
+  "brand": "New Brand",
+  "flavors": ["New Flavor"]
+}
