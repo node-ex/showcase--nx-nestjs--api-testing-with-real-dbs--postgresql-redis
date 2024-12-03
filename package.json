@@ -3,16 +3,23 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "typeorm": "ts-node --project ./apps/app-nest-1/tsconfig.app.json --require tsconfig-paths/register ./node_modules/typeorm/cli.js",
+    "typeorm-ds": "npm run typeorm -- --dataSource ./apps/app-nest-1/src/cli-data-source.ts"
+  },
   "dependencies": {
+    "@liaoliaots/nestjs-redis": "^10.0.0",
     "@nestjs/common": "^10.0.2",
     "@nestjs/config": "^3.2.3",
     "@nestjs/core": "^10.0.2",
     "@nestjs/platform-express": "^10.0.2",
+    "@nestjs/typeorm": "^10.0.2",
     "axios": "^1.6.0",
+    "ioredis": "^5.4.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "typeorm": "^0.3.20"
   },
   "devDependencies": {
     "@jest/environment": "^29.7.0",
@@ -33,6 +40,7 @@
     "@swc/helpers": "~0.5.11",
     "@types/jest": "^29.4.0",
     "@types/node": "~18.16.9",
+    "@types/pg": "^8.11.10",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
@@ -43,6 +51,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-environment-node": "^29.7.0",
     "nx": "19.5.6",
+    "pg": "^8.13.1",
     "prettier": "^2.6.2",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
