@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
-
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
+import { GreetingModule } from '../greeting/greeting.module';
 
 @Module({
   imports: [
@@ -12,8 +10,7 @@ import { ConfigModule } from '@nestjs/config';
       expandVariables: true,
       // cache: true,
     }),
+    GreetingModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
-export class AppModule {}
+export class CoreModule {}
