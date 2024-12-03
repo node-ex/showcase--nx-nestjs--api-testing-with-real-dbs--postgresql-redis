@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { greetingConfig as _greetingConfig } from './configs/greeting.config';
+import { greetingConfig as _greetingConfig } from '../configs/greeting.config';
 import { ConfigType } from '@nestjs/config';
 
 @Injectable()

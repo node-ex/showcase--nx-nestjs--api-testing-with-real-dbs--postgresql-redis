@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { GreetingController } from './greeting.controller';
-import { GreetingService } from './greeting.service';
+import { GreetingController } from './controllers/greeting.controller';
+import { GreetingService } from './services/greeting.service';
 import { greetingConfigModuleImports } from './imports/greeting-config-module.imports';
 
 @Module({
