@@ -1,10 +1,14 @@
-/* eslint-disable */
 import type { Config } from '@jest/types';
 
 export default {
   displayName: 'app-nest-1',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
+  /*
+   * Modified the default value:
+   * https://github.com/nrwl/nx/blob/master/packages/jest/preset/jest-preset.ts#L4
+   */
+  testMatch: ['**/?(*.)unit.spec.[jt]s?(x)'],
   transform: {
     '^.+\\.[tj]s$': [
       'ts-jest',

@@ -23,6 +23,18 @@
         }
       }
     },
-    "type-check": {}
+    "type-check": {},
+    "test:unit": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/app-nest-1/jest.unit.config.ts"
+      }
+    },
+    "test:integration": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/app-nest-1/jest.integration.config.ts"
+      }
+    }
   }
 }
