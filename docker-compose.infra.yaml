@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:16.3-alpine3.20
+    container_name: showcase--api-tests-with-real-dbs--postgres
+    # NOTE: User postgres is used to avoid the following error:
+    # "FATAL: role "root" does not exist docker postgres"
+    user: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: showcase
+      PGPORT: 5432
+    volumes:
+      - type: volume
+        source: showcase--api-tests-with-real-dbs--postgres--data
+        target: /var/lib/postgresql/data
+    ports:
+      - host_ip: 0.0.0.0
+        # NOTE: Port 5433 is used to avoid conflict with local PostgreSQL installation
+        published: 5433 # host
+        target: 5432 # container
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready']
+      interval: 5s
+
+  redis:
+    image: redis:7.4.0-alpine3.20
+    container_name: showcase--api-tests-with-real-dbs--redis
+    ports:
+      - host_ip: 0.0.0.0
+        # NOTE: Port 6380 is used to avoid conflict with local Redis installation
+        published: 6380 # host
+        target: 6379 # container
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: volume
+        source: showcase--api-tests-with-real-dbs--redis--data
+        target: /data
+    # Custom command to enable persistance
+    command: ['redis-server', '--appendonly', 'yes']
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping || exit 1']
+      interval: 5s
+
+  # DB connection URL:
+  # postgres://postgres:postgres@showcase--api-tests-with-real-dbs--postgres:5432/showcase
+  # Browser URL:
+  # http://localhost:8081/?pgsql=showcase--api-tests-with-real-dbs--postgres%3A5432&username=postgres&db=showcase&ns=public&select=keys
+  adminer:
+    image: adminer:4.8.1-standalone
+    container_name: showcase--api-tests-with-real-dbs--adminer
+    ports:
+      - host_ip: 0.0.0.0
+        published: 8081 # host
+        target: 8080 # container
+        protocol: tcp
+        mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Browser URL:
+  # http://localhost:8880
+  phpredisadmin:
+    image: erikdubbelboer/phpredisadmin:1.19.3
+    container_name: showcase--api-tests-with-real-dbs--phpredisadmin
+    ports:
+      - host_ip: 0.0.0.0
+        published: 8880 # host
+        target: 80 # container
+        protocol: tcp
+        mode: host
+    environment:
+      REDIS_1_HOST: showcase--api-tests-with-real-dbs--redis
+      REDIS_1_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  showcase--api-tests-with-real-dbs--postgres--data:
+    name: showcase--api-tests-with-real-dbs--postgres--data
+  showcase--api-tests-with-real-dbs--redis--data:
+    name: showcase--api-tests-with-real-dbs--redis--data
+
+networks:
+  default:
+    name: showcase--api-tests-with-real-dbs--network--default
