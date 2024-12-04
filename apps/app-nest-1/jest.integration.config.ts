@@ -14,4 +14,5 @@ export default {
   setupFilesAfterEnv: [
     './jest/standalone/setupFilesAfterEnv/setupInfraConnections.ts',
   ],
+  maxWorkers: 1,
 } as Config.InitialOptions;
