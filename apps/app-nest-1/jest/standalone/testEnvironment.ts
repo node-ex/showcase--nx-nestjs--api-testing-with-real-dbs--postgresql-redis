@@ -9,6 +9,10 @@ import {
   debugCacheEnvironmentVariables,
   debugDatabaseEnvironmentVariables,
 } from './utils/debug.utils';
+import dotenv from 'dotenv';
+import { Client } from 'pg';
+
+dotenv.config();
 
 const debug = _debug('jest-real-dbs:environment');
 
@@ -50,18 +54,35 @@ export default class TestEnvironment extends NodeEnvironment {
 
   /**
    * Important steps:
+   * - Create and connect a new pg Client for the system database
    * - Terminate all connections to the template database
    * - Create a new test database from the template database
    * - Set environment variables of the isolated test context to values required to connect to the test database
+   * - Store a reference to the pg Client for the system database in globalThis
    */
   private async setupDatabase() {
-    const templateDatabaseName = globalThis.__TEMPLATE_DATABASE_NAME__;
+    const host = process.env['DATABASE__HOST']!;
+    const port = process.env['DATABASE__PORT']!;
+    const username = process.env['DATABASE__USERNAME']!;
+    const password = process.env['DATABASE__PASSWORD']!;
+    const templateDatabaseName = process.env['DATABASE__DATABASE']!;
+    const systemDatabaseName = 'postgres';
+
+    const client = new Client({
+      host,
+      port: parseInt(port, 10),
+      user: username,
+      password,
+      database: systemDatabaseName,
+    });
+
+    await client.connect();
+
     /**
      * When creating a new database via a template database, the
      * template database must not have any connections to it.
      */
-    const dataSource = globalThis.__TYPEORM_DATA_SOURCE_SYSTEM_DATABASE__;
-    await dataSource.query(
+    await client.query(
       `
       SELECT pg_terminate_backend(pg_stat_activity.pid)
       FROM pg_stat_activity
@@ -85,7 +106,11 @@ export default class TestEnvironment extends NodeEnvironment {
      */
     const testDatabaseName =
       'test_' + createHash('md5').update(this.testFilePath).digest('hex');
-    await dataSource.query(
+    /*
+     * Parameterized placeholders cannot be used for database, table, or
+     * column names.
+     */
+    await client.query(
       /* Copies not only the DDL, but also the data, last SEQUENCE numbers, etc. */
       `CREATE DATABASE ${testDatabaseName} TEMPLATE ${templateDatabaseName}`,
     );
@@ -101,6 +126,8 @@ export default class TestEnvironment extends NodeEnvironment {
      * this.global allows to access isolated context used for running tests.
      */
     this.global.process.env['DATABASE__DATABASE'] = testDatabaseName;
+
+    globalThis.__TEST_ENVIRONMENT_PG_CLIENT_SYSTEM_DATABASE__ = client;
 
     debugDatabaseEnvironmentVariables(debug);
     debugDatabaseEnvironmentVariables(
@@ -149,6 +176,7 @@ export default class TestEnvironment extends NodeEnvironment {
   /**
    * Important steps:
    * - Drop the test database (there should be no connections to it)
+   * - End the pg Client connection for the system database
    */
   private async teardownDatabase() {
     debugDatabaseEnvironmentVariables(
@@ -158,12 +186,13 @@ export default class TestEnvironment extends NodeEnvironment {
     );
 
     const testDatabaseName = this.global.process.env['DATABASE__DATABASE']!;
-    const dataSource = globalThis.__TYPEORM_DATA_SOURCE_SYSTEM_DATABASE__;
+    const client = globalThis.__TEST_ENVIRONMENT_PG_CLIENT_SYSTEM_DATABASE__;
     /*
      * Parameterized placeholders cannot be used for database, table, or
      * column names.
      */
-    await dataSource.query(`DROP DATABASE IF EXISTS ${testDatabaseName}`);
+    await client.query(`DROP DATABASE IF EXISTS ${testDatabaseName}`);
+    await client.end();
   }
 
   private async teardownCache() {
