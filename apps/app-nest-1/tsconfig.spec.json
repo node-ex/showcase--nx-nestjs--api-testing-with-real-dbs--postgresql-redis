@@ -9,6 +9,7 @@
     "jest.unit.config.ts",
     "jest.integration.config.ts",
     "src/**/*.spec.ts",
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "jest/**/*.ts"
   ]
 }
