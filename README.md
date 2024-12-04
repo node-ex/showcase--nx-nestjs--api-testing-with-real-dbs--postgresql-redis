@@ -1,4 +1,19 @@
-# template--nx-nestjs--basic
+# showcase--nx-nestjs--api-testing-with-real-dbs--postgresql-redis
+
+## Showcase
+
+1. Install dependencies using `pnpm install`
+2. Copy `.env.template` as `.env` and add/change values if needed
+3. Start the infra and run migrations using `./scripts/docker-compose/infra/services-up-sync.sh`
+4. Run the tests using `pnpm exec nx test:integration app-nest-1`
+5. Troubleshoot tests using the following command
+
+```bash
+npx nx reset && pnpm exec nx test:integration app-nest-1
+
+# With debug output and other useful flags
+npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles
+```
 
 ## Local development
 
@@ -135,27 +150,56 @@ VSCode "ESLint" extension is recommended to lint files. See example `.vscode/set
 
 ### Testing
 
+VSCode "Jest" and/or "Jest Runner" extensions are recommended to run the tests. See example `.vscode/settings.template.json` for recommended settings.
+
 #### Unit tests
 
 Unit tests are run using Jest. To run them, either use commands from `package.json` or Nx commands.
 
 ```bash
+# Show the complete Jest config
+pnpm exec nx test:unit app-nest-1 -- --showConfig
+
 # Run tests for a single app
-pnpm exec nx test app-nest-1
+pnpm exec nx test:unit app-nest-1
 
 # Run tests for all apps
-pnpm exec nx run-many -t test
+pnpm exec nx run-many -t test:unit
 
 # Run tests for multiple apps
-pnpm exec nx run-many -t test -p app-nest-1 app-nest-2
+pnpm exec nx run-many -t test:unit -p app-nest-1 app-nest-2
 
-# Run unit tests only for affected projects (useful for CI)
-pnpm exec nx affected -t test --base=main
-pnpm exec nx affected -t test --base=main --head=HEAD
-pnpm exec nx affected -t test --base=HEAD
+# Run tests only for affected projects (useful for CI)
+pnpm exec nx affected -t test:unit --base=main
+pnpm exec nx affected -t test:unit --base=main --head=HEAD
+pnpm exec nx affected -t test:unit --base=HEAD
 ```
 
-VSCode "Jest" and/or "Jest Runner" extensions are recommended to run the tests. See example `.vscode/settings.template.json` for recommended settings.
+#### Integration tests
+
+Integration tests are run using Jest and use local development database and cache. To run them, either use commands from `package.json` or Nx commands.
+
+```bash
+# Show the complete Jest config
+pnpm exec nx test:integration app-nest-1 -- --showConfig
+
+# Run tests for a single app
+pnpm exec nx test:integration app-nest-1
+
+# Run tests for all apps
+pnpm exec nx run-many -t test:integration
+
+# Run tests for multiple apps
+pnpm exec nx run-many -t test:integration -p app-nest-1 app-nest-2
+
+# Run tests only for affected projects (useful for CI)
+pnpm exec nx affected -t test:integration --base=main
+pnpm exec nx affected -t test:integration --base=main --head=HEAD
+pnpm exec nx affected -t test:integration --base=HEAD
+
+# Debug tests
+npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles
+```
 
 ### Monorepo tooling
 
@@ -176,4 +220,26 @@ pnpm exec nx show projects
 pnpm exec nx show project app-nest-1
 pnpm exec nx show --json project app-nest-1
 pnpm exec nx show --json project app-nest-1 | jq
+```
+
+### Migrations
+
+```bash
+# Show TypeORM CLI command help
+npm run typeorm -- --help
+
+# Create a new blank migration
+npm run typeorm -- migration:create ./apps/app-nest-1/src/migrations/files/<migration-name>
+
+# Generate a new migration based on the changes in the entity files
+npm run typeorm-ds -- migration:generate ./apps/app-nest-1/src/migrations/files/<migration-name>
+
+# Run migrations
+npm run typeorm-ds -- migration:run
+
+# Revert the last migration
+npm run typeorm-ds -- migration:revert
+
+# Show status of all migrations
+npm run typeorm-ds -- migration:show
 ```
