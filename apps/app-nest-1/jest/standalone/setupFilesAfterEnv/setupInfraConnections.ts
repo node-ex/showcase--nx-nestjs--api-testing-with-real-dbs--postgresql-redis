@@ -4,7 +4,9 @@ import { debug as _debug } from 'debug';
 import { Client } from 'pg';
 import { rootConfigModuleImports } from '../../../src/shared/imports/root-config-module.imports';
 import { rootDatabaseModuleImports } from '../../../src/shared/imports/root-database-module.imports';
+import { rootCacheModuleImports } from '../../../src/shared/imports/root-cache-module.imports';
 import { debugDatabaseEnvironmentVariables } from '../utils/debug.utils';
+import { DEFAULT_REDIS, RedisService } from '@liaoliaots/nestjs-redis';
 
 const debug = _debug('jest-real-dbs:setupFilesAfterEnv:setupInfraConnections');
 
@@ -12,6 +14,7 @@ beforeAll(async () => {
   debug('beforeAll');
 
   await databaseBeforeAll();
+  await cacheBeforeAll();
 });
 
 beforeEach(async () => {
@@ -20,10 +23,17 @@ beforeEach(async () => {
   await databaseBeforeEach();
 });
 
+afterEach(async () => {
+  debug('afterEach');
+
+  await cacheAfterEach();
+});
+
 afterAll(async () => {
   debug('afterAll');
 
   await databaseAfterAll();
+  await cacheAfterAll();
 });
 
 /**
@@ -65,6 +75,22 @@ async function databaseBeforeAll() {
 
   await client.connect();
   globalThis.__PG_CLIENT_TEST_DATABASE__ = client;
+}
+
+async function cacheBeforeAll() {
+  /**
+   * Create a new NestJS application with the RedisModule that uses
+   * the environment variables set in the testEnvironment.ts file.
+   */
+  const app = await Test.createTestingModule({
+    imports: [...rootConfigModuleImports, ...rootCacheModuleImports],
+  }).compile();
+
+  const redisService = app.get<RedisService>(RedisService);
+  const redis = redisService.getOrThrow(DEFAULT_REDIS);
+  globalThis.__IOREDIS_CONNECTION_TEST_KEY_PREFIX__ = redis;
+
+  debug("process.env['CACHE__KEY_PREFIX']", process.env['CACHE__KEY_PREFIX']);
 }
 
 /**
@@ -132,6 +158,43 @@ async function databaseBeforeEach() {
   debug('data deleted from all tables');
 }
 
+async function cacheAfterEach() {
+  debug('deleting all cache keys with a specific prefix');
+
+  const redis = globalThis.__IOREDIS_CONNECTION_TEST_KEY_PREFIX__;
+  const pattern = process.env['CACHE__KEY_PREFIX']! + '*';
+  let cursor = '0';
+  do {
+    const [nextCursor, keysWithPrefix] = await redis.scan(
+      cursor,
+      'MATCH',
+      pattern,
+      'COUNT',
+      100,
+    );
+    cursor = nextCursor;
+    debug(
+      `cache keys to delete (${String(
+        keysWithPrefix.length,
+      )}): ${keysWithPrefix.join(', ')}`,
+    );
+
+    /**
+     * Keys returned by the SCAN command are prefixed with the prefix set in
+     * the RedisModule.
+     *
+     * https://github.com/redis/ioredis#transparent-key-prefixing
+     */
+    const keysWithoutPrefix = keysWithPrefix.map((key) =>
+      key.replace(process.env['CACHE__KEY_PREFIX']!, ''),
+    );
+    if (keysWithoutPrefix.length > 0) {
+      const deletedKeyCount = await redis.del(...keysWithoutPrefix);
+      debug(`count of deleted cache keys: ${String(deletedKeyCount)}`);
+    }
+  } while (cursor !== '0');
+}
+
 /**
  * Important steps:
  * - Destroy the TypeORM DataSource for the test database
@@ -140,4 +203,10 @@ async function databaseBeforeEach() {
 async function databaseAfterAll() {
   await globalThis.__TYPEORM_DATA_SOURCE_TEST_DATABASE__.destroy();
   await globalThis.__PG_CLIENT_TEST_DATABASE__.end();
+}
+
+async function cacheAfterAll() {
+  globalThis.__IOREDIS_CONNECTION_TEST_KEY_PREFIX__.disconnect();
+
+  return Promise.resolve();
 }

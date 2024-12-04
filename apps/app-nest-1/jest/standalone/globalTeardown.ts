@@ -10,6 +10,7 @@ export default async (
   debug('standalone teardown.ts');
 
   await teardownDatabase();
+  await teardownCache();
 };
 
 /**
@@ -50,4 +51,10 @@ async function teardownDatabase() {
   debug('test databases after dropping them', remainingDatabases);
 
   await dataSource.destroy();
+}
+
+async function teardownCache() {
+  debug('no need to teardown cache');
+
+  return Promise.resolve();
 }

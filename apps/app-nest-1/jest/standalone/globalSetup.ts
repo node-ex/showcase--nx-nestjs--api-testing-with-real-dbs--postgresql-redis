@@ -1,7 +1,11 @@
 import type { Config } from '@jest/types';
 import { debug as _debug } from 'debug';
 import { createAppAndExtractTypeormDataSource } from '../../src/modules/typeorm-data-sources/utils/typeorm-data-sources.utils';
-import { debugDatabaseEnvironmentVariables } from './utils/debug.utils';
+import {
+  debugCacheEnvironmentVariables,
+  debugDatabaseEnvironmentVariables,
+} from './utils/debug.utils';
+import { Redis } from 'ioredis';
 
 const debug = _debug('jest-real-dbs:setup');
 
@@ -19,6 +23,7 @@ export default async (
   debug('standalone setup.ts');
 
   await setupDatabase();
+  await setupCache();
 };
 
 async function setupDatabase() {
@@ -31,4 +36,29 @@ async function setupDatabase() {
   await dataSource.initialize();
 
   globalThis.__TYPEORM_DATA_SOURCE_SYSTEM_DATABASE__ = dataSource;
+}
+
+async function setupCache() {
+  debugCacheEnvironmentVariables(debug);
+
+  const host = process.env['CACHE__HOST']!;
+  const port = parseInt(process.env['CACHE__PORT']!, 10);
+  const password = process.env['CACHE__PASSWORD'];
+  const keyPrefix = process.env['CACHE__KEY_PREFIX'];
+
+  try {
+    const connection = new Redis({
+      host,
+      port,
+      ...(password != null ? { password } : {}),
+      ...(keyPrefix != null ? { keyPrefix } : {}),
+      lazyConnect: true,
+    });
+    await connection.connect();
+    debug('cache connection test successful');
+    connection.disconnect();
+  } catch (e) {
+    debug('cache connection test error', e);
+    throw e;
+  }
 }

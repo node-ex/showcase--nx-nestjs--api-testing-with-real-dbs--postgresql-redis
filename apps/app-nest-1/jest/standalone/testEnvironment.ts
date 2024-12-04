@@ -5,7 +5,10 @@ import type {
 import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';
 import { debug as _debug } from 'debug';
 import { createHash } from 'crypto';
-import { debugDatabaseEnvironmentVariables } from './utils/debug.utils';
+import {
+  debugCacheEnvironmentVariables,
+  debugDatabaseEnvironmentVariables,
+} from './utils/debug.utils';
 
 const debug = _debug('jest-real-dbs:environment');
 
@@ -27,6 +30,7 @@ export default class TestEnvironment extends NodeEnvironment {
     debug('standalone TestEnvironment.setup');
 
     await this.setupDatabase();
+    await this.setupCache();
   }
 
   override async teardown() {
@@ -35,6 +39,7 @@ export default class TestEnvironment extends NodeEnvironment {
     debug('standalone TestEnvironment.teardown');
 
     await this.teardownDatabase();
+    await this.teardownCache();
   }
 
   override getVmContext() {
@@ -105,6 +110,42 @@ export default class TestEnvironment extends NodeEnvironment {
     );
   }
 
+  private async setupCache() {
+    /**
+     * Requirements for the key (prefix):
+     * - Keys are binary safe, so even content of a JPEG file can be used as a key
+     * - Must be at least 1 character long and no more than 512 MB long
+     *
+     * MD5 hash in a hexadecimal format is 32 characters long and contains only
+     * ASCII letters and numbers, so it should be a valid key (prefix).
+     *
+     * Sources
+     * - https://redis.io/docs/latest/develop/use/keyspace/
+     */
+    const redisKeyPrefix =
+      createHash('md5').update(this.testFilePath).digest('hex') + ':';
+    /*
+     * When CACHE__* environment variable is set via process.env here, tests do
+     * not see this change because they are run inside the `this.global` vm
+     * context that is isolated from the global Node.js context. Only
+     * environment variables present in the global Node.js context
+     * (process.env) at the time of isolated context creation are available to
+     * the tests.
+     *
+     * But setting it via this.global.process.env works.
+     */
+    this.global.process.env['CACHE__KEY_PREFIX'] = redisKeyPrefix;
+
+    debugCacheEnvironmentVariables(debug);
+    debugCacheEnvironmentVariables(
+      debug,
+      this.global.process.env,
+      'this.global.process.env',
+    );
+
+    return Promise.resolve();
+  }
+
   /**
    * Important steps:
    * - Drop the test database (there should be no connections to it)
@@ -123,5 +164,11 @@ export default class TestEnvironment extends NodeEnvironment {
      * column names.
      */
     await dataSource.query(`DROP DATABASE IF EXISTS ${testDatabaseName}`);
+  }
+
+  private async teardownCache() {
+    debug('no need for cache teardown');
+
+    return Promise.resolve();
   }
 }
