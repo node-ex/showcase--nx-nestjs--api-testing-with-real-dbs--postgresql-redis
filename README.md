@@ -12,7 +12,7 @@
 npx nx reset && pnpm exec nx test:integration app-nest-1
 
 # With debug output and other useful flags
-npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles
+npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles --maxWorkers=1
 ```
 
 ## Local development
@@ -198,7 +198,7 @@ pnpm exec nx affected -t test:integration --base=main --head=HEAD
 pnpm exec nx affected -t test:integration --base=HEAD
 
 # Debug tests
-npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles
+npx nx reset && DEBUG=jest-real-dbs:* pnpm exec nx test:integration app-nest-1 --verbose -- --detectOpenHandles --maxWorkers=1
 ```
 
 ### Monorepo tooling

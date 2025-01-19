@@ -9,11 +9,6 @@ import { Redis } from 'ioredis';
 
 const debug = _debug('jest-real-dbs:setup');
 
-/**
- * Important steps:
- * - Create and initialize a new TypeORM DataSource for the template database
- * - Store a reference to the initialized TypeORM DataSource in globalThis
- */
 export default async (
   globalConfig: Config.GlobalConfig,
   projectConfig: Config.ProjectConfig,
@@ -26,16 +21,18 @@ export default async (
   await setupCache();
 };
 
+/**
+ * Important steps:
+ * - Create and initialize a new TypeORM DataSource for the template database
+ * - Store a reference to the initialized TypeORM DataSource in globalThis
+ */
 async function setupDatabase() {
-  globalThis.__TEMPLATE_DATABASE_NAME__ = process.env['DATABASE__DATABASE']!;
-
-  process.env['DATABASE__DATABASE'] = 'postgres';
   debugDatabaseEnvironmentVariables(debug);
 
   const dataSource = await createAppAndExtractTypeormDataSource();
   await dataSource.initialize();
 
-  globalThis.__TYPEORM_DATA_SOURCE_SYSTEM_DATABASE__ = dataSource;
+  globalThis.__GLOBAL_TYPEORM_DATA_SOURCE_TEMPLATE_DATABASE__ = dataSource;
 }
 
 async function setupCache() {

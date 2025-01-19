@@ -19,7 +19,8 @@ export default async (
  * - Destroy the TypeORM DataSource for the template database initialized in the global setup
  */
 async function teardownDatabase() {
-  const dataSource = globalThis.__TYPEORM_DATA_SOURCE_SYSTEM_DATABASE__;
+  const dataSource =
+    globalThis.__GLOBAL_TYPEORM_DATA_SOURCE_TEMPLATE_DATABASE__;
   const testDatabasesResult = await dataSource.query<{ datname: string }[]>(`
     SELECT datname
     FROM pg_database
